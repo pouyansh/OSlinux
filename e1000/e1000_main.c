@@ -32,6 +32,19 @@
 #include <linux/prefetch.h>
 #include <linux/bitops.h>
 #include <linux/if_vlan.h>
+#include <linux/delay.h>
+#include <linux/kernel.h>
+#include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
+#include <linux/pm_domain.h>
+#include <linux/pm_qos.h>
+#include <linux/pm_clock.h>
+#include <linux/slab.h>
+#include <linux/err.h>
+#include <linux/sched.h>
+#include <linux/suspend.h>
+#include <linux/export.h>
+#include <linux/ktime.h>
 
 char e1000_driver_name[] = "e1000";
 static char e1000_driver_string[] = "Intel(R) PRO/1000 Network Driver";
@@ -1980,10 +1993,21 @@ e1000_unmap_and_free_tx_resource(struct e1000_adapter *adapter,
 	}
 	if (buffer_info->skb) {
 		//pouyan
-		buffer_info->skb->ourSkb->tstamp = ms_to_ktime(ktime_to_ms(ktime_get_real())-ktime_to_ms(buffer_info->skb->ourSkb->tstamp)); 
-		buffer_info->skb->endtime = ktime_get_real();
+		struct sk_buff *newSkb;
+		newSkb = skb_copy(buffer_info->skb, GFP_KERNEL);
+		newSkb->starttime = buffer_info->skb->starttime;
+		newSkb->endtime = ktime_get_real(); 
+		skb_copy_hash(newSkb, buffer_info->skb);
+		if(adapter->ourSkb){
+			newSkb->next = adapter->ourSkb->next;
+			newSkb->prev = adapter->ourSkb->prev;
+			adapter->ourSkb->next = newSkb;
+		} else {
+			adapter->ourSkb = newSkb;
+		}
+		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
+		//buffer_info->skb->endtime = ktime_get_real();
 
-		
 		dev_kfree_skb_any(buffer_info->skb);
 		buffer_info->skb = NULL;
 		
@@ -4486,19 +4510,7 @@ process_skb:
 
 		e1000_receive_skb(adapter, status, rx_desc->special, skb);
 		//pouyan
-		struct sk_buff *newSkb;
-		newSkb = skb_copy(skb, GFP_KERNEL);
-		newSkb->tstamp = ktime_get_real();
-		newSkb->starttime = newSkb->tstamp;
-		skb_copy_hash(newSkb, skb);
-		if(adapter->ourSkb){
-			newSkb->next = adapter->ourSkb->next;
-			newSkb->prev = adapter->ourSkb->prev;
-			adapter->ourSkb->next = newSkb;
-		} else {
-			adapter->ourSkb = newSkb;
-		}
-		skb->ourSkb = newSkb;
+		skb->starttime = ktime_get_real();
 
 next_desc:
 		rx_desc->status = 0;

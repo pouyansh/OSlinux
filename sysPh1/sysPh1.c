@@ -51,7 +51,8 @@ asmlinkage long sys_sysPh1(int n){
 					k = k+1;
 				}
 				else if (n==4 ) {
-					printk("%d: process time = %lld, start time = %lld",k, ktime_to_ms(skb->tstamp), ktime_to_ms(skb->starttime));
+					//printk("%d: process time = %lld, start time = %lld",k, ktime_to_ms(skb->tstamp), ktime_to_ms(skb->starttime));
+					printk("%d: process time = %lld",k, ktime_to_ms(skb->starttime));
 					if (skb->endtime) {
 						printk("end time = %lld",ktime_to_ms(skb->endtime));
 					}

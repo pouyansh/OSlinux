@@ -1311,6 +1311,41 @@ deps_drivers/net/ethernet/intel/e1000/e1000_main.o := \
   include/net/ip_fib.h \
   include/uapi/linux/in_route.h \
   include/uapi/linux/route.h \
+  include/linux/platform_device.h \
+    $(wildcard include/config/suspend.h) \
+  include/linux/pm_runtime.h \
+  include/linux/pm_domain.h \
+    $(wildcard include/config/pm/generic/domains/sleep.h) \
+    $(wildcard include/config/pm/generic/domains/of.h) \
+  include/linux/of.h \
+    $(wildcard include/config/sparc.h) \
+    $(wildcard include/config/of/dynamic.h) \
+    $(wildcard include/config/attach/node.h) \
+    $(wildcard include/config/detach/node.h) \
+    $(wildcard include/config/add/property.h) \
+    $(wildcard include/config/remove/property.h) \
+    $(wildcard include/config/update/property.h) \
+    $(wildcard include/config/of/numa.h) \
+    $(wildcard include/config/no/change.h) \
+    $(wildcard include/config/change/add.h) \
+    $(wildcard include/config/change/remove.h) \
+    $(wildcard include/config/of/resolve.h) \
+    $(wildcard include/config/of/overlay.h) \
+  include/linux/property.h \
+  include/linux/fwnode.h \
+  include/linux/pm_qos.h \
+  include/linux/pm_clock.h \
+    $(wildcard include/config/have/clk.h) \
+  include/linux/suspend.h \
+    $(wildcard include/config/vt.h) \
+    $(wildcard include/config/pm/sleep/debug.h) \
+    $(wildcard include/config/pm/autosleep.h) \
+    $(wildcard include/config/arch/save/page/keys.h) \
+  include/linux/swap.h \
+    $(wildcard include/config/frontswap.h) \
+  include/linux/node.h \
+    $(wildcard include/config/memory/hotplug/sparse.h) \
+  include/linux/freezer.h \
 
 drivers/net/ethernet/intel/e1000/e1000_main.o: $(deps_drivers/net/ethernet/intel/e1000/e1000_main.o)
 
