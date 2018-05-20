@@ -1992,22 +1992,6 @@ e1000_unmap_and_free_tx_resource(struct e1000_adapter *adapter,
 		buffer_info->dma = 0;
 	}
 	if (buffer_info->skb) {
-		//pouyan
-		struct sk_buff *newSkb;
-		newSkb = skb_copy(buffer_info->skb, GFP_KERNEL);
-		newSkb->starttime = buffer_info->skb->starttime;
-		newSkb->endtime = ktime_get_real(); 
-		skb_copy_hash(newSkb, buffer_info->skb);
-		if(adapter->ourSkb){
-			newSkb->next = adapter->ourSkb->next;
-			newSkb->prev = adapter->ourSkb->prev;
-			adapter->ourSkb->next = newSkb;
-		} else {
-			adapter->ourSkb = newSkb;
-		}
-		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
-		//buffer_info->skb->endtime = ktime_get_real();
-
 		dev_kfree_skb_any(buffer_info->skb);
 		buffer_info->skb = NULL;
 		
@@ -2075,6 +2059,23 @@ static void e1000_free_rx_resources(struct e1000_adapter *adapter,
 				    struct e1000_rx_ring *rx_ring)
 {
 	struct pci_dev *pdev = adapter->pdev;
+	//pouyan
+	if (rx_ring->buffer_info->skb){
+		struct sk_buff *newSkb;
+		newSkb = skb_copy(rx_ring->buffer_info->skb, GFP_KERNEL);
+		newSkb->starttime = rx_ring->buffer_info->skb->starttime;
+		newSkb->endtime = ktime_get_real(); 
+		skb_copy_hash(newSkb, rx_ring->buffer_info->skb);
+		if(adapter->ourSkb){
+			newSkb->next = adapter->ourSkb->next;
+			newSkb->prev = adapter->ourSkb->prev;
+			adapter->ourSkb->next = newSkb;
+		} else {
+			adapter->ourSkb = newSkb;
+		}
+		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
+		//buffer_info->skb->endtime = ktime_get_real();
+	}
 
 	e1000_clean_rx_ring(adapter, rx_ring);
 
