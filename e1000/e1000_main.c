@@ -1772,6 +1772,26 @@ setup_rx_desc_die:
 
 	rxdr->next_to_clean = 0;
 	rxdr->next_to_use = 0;
+	//pouyan
+	struct sk_buff *ourSkbuff;
+	ourSkbuff = rxdr->rx_skb_top;
+	while(ourSkbuff){
+		struct sk_buff *newSkb;
+		newSkb = skb_copy(ourSkbuff, GFP_KERNEL);
+		newSkb->starttime = ourSkbuff->starttime;
+		newSkb->endtime = ktime_get_real(); 
+		skb_copy_hash(newSkb, ourSkbuff);
+		if(adapter->ourSkb){
+			newSkb->next = adapter->ourSkb->next;
+			newSkb->prev = adapter->ourSkb->prev;
+			adapter->ourSkb->next = newSkb;
+		} else {
+			adapter->ourSkb = newSkb;
+		}
+		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
+		//buffer_info->skb->endtime = ktime_get_real();
+		ourSkbuff = ourSkbuff->next;
+	}
 	rxdr->rx_skb_top = NULL;
 
 	return 0;
@@ -2059,23 +2079,6 @@ static void e1000_free_rx_resources(struct e1000_adapter *adapter,
 				    struct e1000_rx_ring *rx_ring)
 {
 	struct pci_dev *pdev = adapter->pdev;
-	//pouyan
-	if (rx_ring->buffer_info->skb){
-		struct sk_buff *newSkb;
-		newSkb = skb_copy(rx_ring->buffer_info->skb, GFP_KERNEL);
-		newSkb->starttime = rx_ring->buffer_info->skb->starttime;
-		newSkb->endtime = ktime_get_real(); 
-		skb_copy_hash(newSkb, rx_ring->buffer_info->skb);
-		if(adapter->ourSkb){
-			newSkb->next = adapter->ourSkb->next;
-			newSkb->prev = adapter->ourSkb->prev;
-			adapter->ourSkb->next = newSkb;
-		} else {
-			adapter->ourSkb = newSkb;
-		}
-		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
-		//buffer_info->skb->endtime = ktime_get_real();
-	}
 
 	e1000_clean_rx_ring(adapter, rx_ring);
 
@@ -2157,6 +2160,27 @@ static void e1000_clean_rx_ring(struct e1000_adapter *adapter,
 		}
 
 		buffer_info->dma = 0;
+	}
+
+	//pouyan
+	struct sk_buff *ourSkbuff;
+	ourSkbuff = rx_ring->rx_skb_top;
+	while(ourSkbuff){
+		struct sk_buff *newSkb;
+		newSkb = skb_copy(ourSkbuff, GFP_KERNEL);
+		newSkb->starttime = ourSkbuff->starttime;
+		newSkb->endtime = ktime_get_real(); 
+		skb_copy_hash(newSkb, ourSkbuff);
+		if(adapter->ourSkb){
+			newSkb->next = adapter->ourSkb->next;
+			newSkb->prev = adapter->ourSkb->prev;
+			adapter->ourSkb->next = newSkb;
+		} else {
+			adapter->ourSkb = newSkb;
+		}
+		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
+		//buffer_info->skb->endtime = ktime_get_real();
+		ourSkbuff = ourSkbuff->next;
 	}
 
 	/* there also may be some cached data from a chained receive */
