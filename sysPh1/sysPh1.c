@@ -16,10 +16,9 @@ asmlinkage long sys_sysPh1(int n){
 
 	while (dev != NULL) {
 		adap = (struct e1000_adapter*) netdev_priv(dev); 
-		if (adap == NULL) printk ("nulle\n");
-		skb = adap->ourSkb;
-		/*for (i = 1; i <= sizeof (adap->rx_ring)/sizeof (adap->rx_ring[0]); i++) {
-			skb = adap->rx_ring [i].rx_skb_top; */
+		if (adap == NULL) printk ("null\n");
+		else {
+			skb = adap->ourSkb;
 			while (skb != NULL) {
 				if (n==1) {
 					printk("%d: length = %u\n", k, skb->len);
@@ -27,52 +26,31 @@ asmlinkage long sys_sysPh1(int n){
 				} 
 				else if (n==2) {
 					unsigned char *prot = skb_network_header(skb);
-					printk("%d: protocol = %u, protocol in header = %u\n", k, skb->protocol, prot[9]);
+					printk("%d: protocol = %u ", k, skb->protocol);
 					if (skb->protocol == 8) {
-						if (prot[9]==17) printk(" udp ");
-						else printk(" tcp ");
+						if (prot[9]==17) printk("ethernet udp");
+						else printk("ethernet tcp");
 					}
 					printk("\n");
 					k = k+1;
-					/*struct iphdr *ip_header; 
-					ip_header = (struct iphdr *)skb_network_header(skb); 
-					if (ip_header != NULL) {
-						printk ("%d ", k); 
-						if (ip_header->protocol== IPPROTO_TCP)
-							printk("tcp "); 
-						if (ip_header->protocol==IPPROTO_UDP)
-							printk("udp "); 
-						printk("\n");
-						k = k+1;
-					}*/
 				}
 				else if (n==3 ) {
 					printk("%d: hash = %u\n", k, skb_get_hash(skb)); 
 					k = k+1;
 				}
 				else if (n==4 ) {
-					//printk("%d: process time = %lld, start time = %lld",k, ktime_to_ms(skb->tstamp), ktime_to_ms(skb->starttime));
-					printk("%d: process time = %lld",k, ktime_to_ms(skb->starttime));
-					if (skb->endtime) {
-						printk("end time = %lld",ktime_to_ms(skb->endtime));
+					printk("%d: start time = %lld",k, ktime_to_ms(skb->startTime));
+					if (skb->endTime) {
+						printk("end time = %lld",ktime_to_ms(skb->endTime));
 					}
 					printk("\n");
-					/*printk("%d\n", ktime_to_ms(ktime_get_real()));
-					skb_get_timestamp (skb, tv); 
-					k = k+1;
-					if (tv) {
-						printk("time = %d", (int) tv->tv_sec); 
-						tv = NULL;
-						k = k+1;
-					}
-					printk ("\n");*/
 					k = k+1;
 				}
 				skb = skb->next;
 			}
-		//}
-		if (n==5){
-			adap->ourSkb = NULL;	
+			if (n==5){
+				adap->ourSkb = NULL;	
+			}
 		}
 		dev = next_net_device(dev);
 	}

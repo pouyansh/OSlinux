@@ -32,19 +32,6 @@
 #include <linux/prefetch.h>
 #include <linux/bitops.h>
 #include <linux/if_vlan.h>
-#include <linux/delay.h>
-#include <linux/kernel.h>
-#include <linux/platform_device.h>
-#include <linux/pm_runtime.h>
-#include <linux/pm_domain.h>
-#include <linux/pm_qos.h>
-#include <linux/pm_clock.h>
-#include <linux/slab.h>
-#include <linux/err.h>
-#include <linux/sched.h>
-#include <linux/suspend.h>
-#include <linux/export.h>
-#include <linux/ktime.h>
 
 char e1000_driver_name[] = "e1000";
 static char e1000_driver_string[] = "Intel(R) PRO/1000 Network Driver";
@@ -1772,26 +1759,6 @@ setup_rx_desc_die:
 
 	rxdr->next_to_clean = 0;
 	rxdr->next_to_use = 0;
-	//pouyan
-	struct sk_buff *ourSkbuff;
-	ourSkbuff = rxdr->rx_skb_top;
-	while(ourSkbuff){
-		struct sk_buff *newSkb;
-		newSkb = skb_copy(ourSkbuff, GFP_KERNEL);
-		newSkb->starttime = ourSkbuff->starttime;
-		newSkb->endtime = ktime_get_real(); 
-		skb_copy_hash(newSkb, ourSkbuff);
-		if(adapter->ourSkb){
-			newSkb->next = adapter->ourSkb->next;
-			newSkb->prev = adapter->ourSkb->prev;
-			adapter->ourSkb->next = newSkb;
-		} else {
-			adapter->ourSkb = newSkb;
-		}
-		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
-		//buffer_info->skb->endtime = ktime_get_real();
-		ourSkbuff = ourSkbuff->next;
-	}
 	rxdr->rx_skb_top = NULL;
 
 	return 0;
@@ -2012,9 +1979,10 @@ e1000_unmap_and_free_tx_resource(struct e1000_adapter *adapter,
 		buffer_info->dma = 0;
 	}
 	if (buffer_info->skb) {
+		//OS e ma
+		//if (buffer_info->skb->copySkb) buffer_info->skb->copySkb->endTime = ktime_get_real();
 		dev_kfree_skb_any(buffer_info->skb);
 		buffer_info->skb = NULL;
-		
 	}
 	buffer_info->time_stamp = 0;
 	/* buffer_info must be completely set up in the transmit path */
@@ -2160,27 +2128,6 @@ static void e1000_clean_rx_ring(struct e1000_adapter *adapter,
 		}
 
 		buffer_info->dma = 0;
-	}
-
-	//pouyan
-	struct sk_buff *ourSkbuff;
-	ourSkbuff = rx_ring->rx_skb_top;
-	while(ourSkbuff){
-		struct sk_buff *newSkb;
-		newSkb = skb_copy(ourSkbuff, GFP_KERNEL);
-		newSkb->starttime = ourSkbuff->starttime;
-		newSkb->endtime = ktime_get_real(); 
-		skb_copy_hash(newSkb, ourSkbuff);
-		if(adapter->ourSkb){
-			newSkb->next = adapter->ourSkb->next;
-			newSkb->prev = adapter->ourSkb->prev;
-			adapter->ourSkb->next = newSkb;
-		} else {
-			adapter->ourSkb = newSkb;
-		}
-		//buffer_info->skb->ourSkb->tstamp = ktime_get_real()-buffer_info->skb->ourSkb->tstamp; 
-		//buffer_info->skb->endtime = ktime_get_real();
-		ourSkbuff = ourSkbuff->next;
 	}
 
 	/* there also may be some cached data from a chained receive */
@@ -3235,6 +3182,8 @@ static netdev_tx_t e1000_xmit_frame(struct sk_buff *skb,
 				if (!__pskb_pull_tail(skb, pull_size)) {
 					e_err(drv, "__pskb_pull_tail "
 					      "failed.\n");
+					//OS e ma
+					//if (skb->copySkb) skb->copySkb->endTime = ktime_get_real();
 					dev_kfree_skb_any(skb);
 					return NETDEV_TX_OK;
 				}
@@ -3299,6 +3248,8 @@ static netdev_tx_t e1000_xmit_frame(struct sk_buff *skb,
 
 	tso = e1000_tso(adapter, tx_ring, skb, protocol);
 	if (tso < 0) {
+		//OS e ma
+		//if (skb->copySkb) skb->copySkb->endTime = ktime_get_real();
 		dev_kfree_skb_any(skb);
 		return NETDEV_TX_OK;
 	}
@@ -3354,6 +3305,8 @@ static netdev_tx_t e1000_xmit_frame(struct sk_buff *skb,
 			mmiowb();
 		}
 	} else {
+		//OS e ma
+		//if (skb->copySkb) skb->copySkb->endTime = ktime_get_real();
 		dev_kfree_skb_any(skb);
 		tx_ring->buffer_info[first].time_stamp = 0;
 		tx_ring->next_to_use = first;
@@ -4078,6 +4031,17 @@ static void e1000_receive_skb(struct e1000_adapter *adapter, u8 status,
 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), vid);
 	}
 	napi_gro_receive(&adapter->napi, skb);
+	//OS e ma
+	struct sk_buff* newSkb;
+	newSkb = skb_copy(skb, GFP_KERNEL);
+	newSkb->startTime = ktime_get_real();
+	skb_copy_hash(newSkb, skb);
+	skb->copySkb = newSkb;
+	if (adapter->ourSkb) {
+		newSkb->next = adapter->ourSkb;	
+		adapter->ourSkb->prev = newSkb;
+	}
+	adapter->ourSkb = newSkb;
 }
 
 /**
@@ -4257,8 +4221,16 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
 				/* an error means any chain goes out the window
 				 * too
 				 */
-				if (rx_ring->rx_skb_top)
+				if (rx_ring->rx_skb_top) {
+					//OS e ma
+					//struct sk_buff* tempSkb = rx_ring->rx_skb_top;
+					//while(tempSkb) {
+						//if (tempSkb->copySkb) tempSkb->copySkb->endTime = ktime_get_real();
+						//tempSkb = tempSkb->next;
+					//}
 					dev_kfree_skb(rx_ring->rx_skb_top);
+
+				}
 				rx_ring->rx_skb_top = NULL;
 				goto next_desc;
 			}
@@ -4408,7 +4380,7 @@ static struct sk_buff *e1000_copybreak(struct e1000_adapter *adapter,
 				length, DMA_FROM_DEVICE);
 
 	skb_put_data(skb, data, length);
-	
+
 	return skb;
 }
 
@@ -4493,6 +4465,8 @@ static bool e1000_clean_rx_irq(struct e1000_adapter *adapter,
 		if (adapter->discarding) {
 			/* All receives must fit into a single buffer */
 			netdev_dbg(netdev, "Receive packet consumed multiple buffers\n");
+			//OS e ma
+			//if (skb->copySkb) skb->copySkb->endTime = ktime_get_real();
 			dev_kfree_skb(skb);
 			if (status & E1000_RXD_STAT_EOP)
 				adapter->discarding = false;
@@ -4507,6 +4481,8 @@ static bool e1000_clean_rx_irq(struct e1000_adapter *adapter,
 			} else if (netdev->features & NETIF_F_RXALL) {
 				goto process_skb;
 			} else {
+				//OS e ma
+				//if (skb->copySkb) skb->copySkb->endTime = ktime_get_real();
 				dev_kfree_skb(skb);
 				goto next_desc;
 			}
@@ -4534,8 +4510,6 @@ process_skb:
 				  le16_to_cpu(rx_desc->csum), skb);
 
 		e1000_receive_skb(adapter, status, rx_desc->special, skb);
-		//pouyan
-		skb->starttime = ktime_get_real();
 
 next_desc:
 		rx_desc->status = 0;
@@ -4560,7 +4534,6 @@ next_desc:
 	adapter->total_rx_bytes += total_rx_bytes;
 	netdev->stats.rx_bytes += total_rx_bytes;
 	netdev->stats.rx_packets += total_rx_packets;
-
 	return cleaned;
 }
 

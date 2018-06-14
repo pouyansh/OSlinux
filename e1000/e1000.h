@@ -229,8 +229,9 @@ struct e1000_rx_ring {
 /* board specific private data structure */
 
 struct e1000_adapter {
-	//pouyan
-	struct sk_buff *ourSkb;
+	//OS e ma
+	struct sk_buff* ourSkb;
+	
 	unsigned long active_vlans[BITS_TO_LONGS(VLAN_N_VID)];
 	u16 mng_vlan_id;
 	u32 bd_number;

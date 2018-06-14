@@ -669,10 +669,10 @@ struct sk_buff {
 		struct rb_node	rbnode; /* used in netem & tcp stack */
 	};
 	struct sock		*sk;
-	
-	//pouyan
-	struct sk_buff* ourSkb;
-	ktime_t starttime, endtime;
+
+	//OS e ma
+	struct sk_buff* copySkb;
+	ktime_t startTime, endTime;
 
 	union {
 		struct net_device	*dev;
